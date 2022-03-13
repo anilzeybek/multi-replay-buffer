@@ -6,6 +6,7 @@ import torch
 import argparse
 from td3_agent import TD3Agent
 from time import time
+import pandas as pd
 
 
 def read_hyperparams():
@@ -74,6 +75,7 @@ def train(env, cont):
         agent.load()
 
     start = time()
+    scores = []
 
     max_episodes = hyperparams['max_episodes']
     for i in range(1, max_episodes+1):
@@ -93,9 +95,13 @@ def train(env, cont):
             agent.save()
 
         print(f'ep: {i}/{max_episodes} | score: {score:.2f}')
+        scores.append(score)
 
     end = time()
     print("training completed, elapsed time: ", end - start)
+
+    moving_avg = pd.DataFrame(scores).rolling(window=10).mean().dropna()
+    moving_avg.to_csv("./temp.csv", sep=' ', index=False, header=False)
 
     agent.save()
 
