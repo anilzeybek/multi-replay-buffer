@@ -127,6 +127,10 @@ def train(env, mer, cont):
         print(f'ep: {i}/{max_episodes} | score: {score:.2f}')
         scores.append(score)
 
+        if np.mean(scores[-10:]) >= 200:
+            print("200 score reached in mean of last 10 episodes")
+            break
+
     end = time()
     print("training completed, elapsed time: ", end - start)
 
