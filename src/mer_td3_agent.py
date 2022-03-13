@@ -7,7 +7,6 @@ from models import Actor, Critic
 from cpprb import ReplayBuffer
 from sklearn.mixture import GaussianMixture
 import os
-import math
 
 
 class MERTD3Agent:
@@ -155,17 +154,15 @@ class MERTD3Agent:
         self.intermediate_rb.clear()
 
     def _sample(self, batch_size):
-        # Maybe we shouldn't use sqrts???
+        intermediate_rb_stored = self.intermediate_rb.get_stored_size()
+        rb0_stored = self.rb0.get_stored_size()
+        rb1_stored = self.rb1.get_stored_size()
 
-        intermediate_rb_stored_sqrt = math.sqrt(self.intermediate_rb.get_stored_size())
-        rb0_stored_sqrt = math.sqrt(self.rb0.get_stored_size())
-        rb1_stored_sqrt = math.sqrt(self.rb1.get_stored_size())
+        total = intermediate_rb_stored + rb0_stored + rb1_stored
 
-        total = intermediate_rb_stored_sqrt + rb0_stored_sqrt + rb1_stored_sqrt
-
-        samples_intermediate = self.intermediate_rb.sample(int(batch_size * intermediate_rb_stored_sqrt // total))
-        samples_rb0 = self.rb0.sample(int(batch_size * rb0_stored_sqrt // total))
-        samples_rb1 = self.rb1.sample(int(batch_size * rb1_stored_sqrt // total))
+        samples_intermediate = self.intermediate_rb.sample(batch_size * intermediate_rb_stored // total)
+        samples_rb0 = self.rb0.sample(batch_size * rb0_stored // total)
+        samples_rb1 = self.rb1.sample(batch_size * rb1_stored // total)
 
         samples_all = {}
 
