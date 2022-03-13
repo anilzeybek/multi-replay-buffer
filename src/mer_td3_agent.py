@@ -135,7 +135,7 @@ class MERTD3Agent:
 
         all_transitions = self.intermediate_rb.get_all_transitions()
 
-        preds = self.model.fit_predict(all_transitions['obs'])
+        preds = self.model.fit_predict(np.concatenate([all_transitions['obs'], all_transitions['action']], axis=1))
 
         zero_idxs = np.where(preds == 0)
         one_idxs = np.where(preds == 1)
