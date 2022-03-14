@@ -4,8 +4,7 @@ import numpy as np
 import json
 import torch
 import argparse
-from orig_td3_agent import OrigTD3Agent
-from mer_td3_agent import MERTD3Agent
+from orig_td3_agent import OrigTD3Agent as TD3Agent
 from time import time
 
 
@@ -28,20 +27,13 @@ def get_args():
 
 
 def test(env, mer):
-    if mer:
-        agent = MERTD3Agent(
-            obs_dim=env.observation_space.shape[0],
-            action_dim=env.action_space.shape[0],
-            action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-            env_name=env.unwrapped.spec.id
-        )
-    else:
-        agent = OrigTD3Agent(
-            obs_dim=env.observation_space.shape[0],
-            action_dim=env.action_space.shape[0],
-            action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-            env_name=env.unwrapped.spec.id
-        )
+    agent = TD3Agent(
+        obs_dim=env.observation_space.shape[0],
+        action_dim=env.action_space.shape[0],
+        action_bounds={"low": env.action_space.low, "high": env.action_space.high},
+        env_name=env.unwrapped.spec.id,
+        mer=mer
+    )
 
     agent.load()
 
@@ -63,42 +55,24 @@ def test(env, mer):
 def train(env, mer, cont):
     hyperparams = read_hyperparams()
 
-    if mer:
-        agent = MERTD3Agent(
-            obs_dim=env.observation_space.shape[0],
-            action_dim=env.action_space.shape[0],
-            action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-            env_name=env.unwrapped.spec.id,
-            expl_noise=hyperparams['expl_noise'],
-            start_timesteps=hyperparams['start_timesteps'],
-            buffer_size=hyperparams['buffer_size'],
-            actor_lr=hyperparams['actor_lr'],
-            critic_lr=hyperparams['critic_lr'],
-            batch_size=hyperparams['batch_size'],
-            gamma=hyperparams['gamma'],
-            tau=hyperparams['tau'],
-            policy_noise=hyperparams['policy_noise'],
-            noise_clip=hyperparams['noise_clip'],
-            policy_freq=hyperparams['policy_freq']
-        )
-    else:
-        agent = OrigTD3Agent(
-            obs_dim=env.observation_space.shape[0],
-            action_dim=env.action_space.shape[0],
-            action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-            env_name=env.unwrapped.spec.id,
-            expl_noise=hyperparams['expl_noise'],
-            start_timesteps=hyperparams['start_timesteps'],
-            buffer_size=hyperparams['buffer_size'],
-            actor_lr=hyperparams['actor_lr'],
-            critic_lr=hyperparams['critic_lr'],
-            batch_size=hyperparams['batch_size'],
-            gamma=hyperparams['gamma'],
-            tau=hyperparams['tau'],
-            policy_noise=hyperparams['policy_noise'],
-            noise_clip=hyperparams['noise_clip'],
-            policy_freq=hyperparams['policy_freq']
-        )
+    agent = TD3Agent(
+        obs_dim=env.observation_space.shape[0],
+        action_dim=env.action_space.shape[0],
+        action_bounds={"low": env.action_space.low, "high": env.action_space.high},
+        env_name=env.unwrapped.spec.id,
+        expl_noise=hyperparams['expl_noise'],
+        start_timesteps=hyperparams['start_timesteps'],
+        buffer_size=hyperparams['buffer_size'],
+        actor_lr=hyperparams['actor_lr'],
+        critic_lr=hyperparams['critic_lr'],
+        batch_size=hyperparams['batch_size'],
+        gamma=hyperparams['gamma'],
+        tau=hyperparams['tau'],
+        policy_noise=hyperparams['policy_noise'],
+        noise_clip=hyperparams['noise_clip'],
+        policy_freq=hyperparams['policy_freq'],
+        mer=mer
+    )
 
     if cont:
         agent.load()

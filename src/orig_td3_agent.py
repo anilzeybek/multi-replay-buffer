@@ -5,11 +5,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 from models import Actor, Critic
 from cpprb import ReplayBuffer
+from sklearn.mixture import GaussianMixture
 import os
 
 
 class OrigTD3Agent:
-    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2):
+    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, mer=False):
         self.max_action = max(action_bounds["high"])
 
         self.obs_dim = obs_dim
@@ -27,6 +28,7 @@ class OrigTD3Agent:
         self.policy_noise = policy_noise * self.max_action
         self.noise_clip = noise_clip * self.max_action
         self.policy_freq = policy_freq
+        self.mer = mer
 
         self.actor = Actor(obs_dim, action_dim, self.max_action)
         self.actor_target = deepcopy(self.actor)
@@ -44,6 +46,11 @@ class OrigTD3Agent:
             "next_obs": {"shape": self.obs_dim},
             "done": {}
         })
+
+        if self.mer:
+            self.cluster_rbs = [self._create_rb(), self._create_rb()]
+            self.clustering_model = GaussianMixture(n_components=2)
+
         self.t = 0
 
     def act(self, obs, train_mode=True):
@@ -68,17 +75,23 @@ class OrigTD3Agent:
         self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, done=done)
 
         if self.t >= self.start_timesteps:
+            if self.mer and self.t % 1000 == 0:
+                self._cluster()
+
             self._learn()
 
     def save(self):
-        os.makedirs(f"saved_networks/orig/{self.env_name}", exist_ok=True)
+        identifier = "mer" if self.mer else "orig"
+
+        os.makedirs(f"saved_networks/{identifier}/{self.env_name}", exist_ok=True)
         torch.save({"actor": self.actor.state_dict(),
                     "critic": self.critic.state_dict(),
                     "t": self.t
-                    }, f"saved_networks/orig/{self.env_name}/actor_critic.pt")
+                    }, f"saved_networks/{identifier}/{self.env_name}/actor_critic.pt")
 
     def load(self):
-        checkpoint = torch.load(f"saved_networks/orig/{self.env_name}/actor_critic.pt")
+        identifier = "mer" if self.mer else "orig"
+        checkpoint = torch.load(f"saved_networks/{identifier}/{self.env_name}/actor_critic.pt")
 
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_target = deepcopy(self.actor)
@@ -88,8 +101,69 @@ class OrigTD3Agent:
 
         self.t = checkpoint["t"]
 
+    def _create_rb(self):
+        rb = ReplayBuffer(self.buffer_size, env_dict={
+            "obs": {"shape": self.obs_dim},
+            "action": {"shape": self.action_dim},
+            "reward": {},
+            "next_obs": {"shape": self.obs_dim},
+            "done": {}
+        })
+        return rb
+
+    def _cluster(self):
+        for cluster_rb in self.cluster_rbs:
+            if cluster_rb.get_stored_size() > 0:
+                all_cluster_rb_transitions = cluster_rb.get_all_transitions()
+                self.rb.add(obs=all_cluster_rb_transitions['obs'],
+                            action=all_cluster_rb_transitions['action'],
+                            reward=all_cluster_rb_transitions['reward'],
+                            next_obs=all_cluster_rb_transitions['next_obs'],
+                            done=all_cluster_rb_transitions['done'])
+
+                cluster_rb.clear()
+
+        all_transitions = self.rb.get_all_transitions()
+
+        preds = self.clustering_model.fit_predict(np.concatenate(
+            [all_transitions['obs'], all_transitions['action']], axis=1))
+
+        idxs = []
+        for i in range(len(self.cluster_rbs)):
+            idxs.append(np.where(preds == i))
+
+        for i, cluster_rb in enumerate(self.cluster_rbs):
+            cluster_rb.add(obs=all_transitions['obs'][idxs[i]],
+                           action=all_transitions['action'][idxs[i]],
+                           reward=all_transitions['reward'][idxs[i]],
+                           next_obs=all_transitions['next_obs'][idxs[i]],
+                           done=all_transitions['done'][idxs[i]])
+
+        self.rb.clear()
+
+    def _sample(self, batch_size):
+        total_stored = self.rb.get_stored_size()
+        for cluster_rb in self.cluster_rbs:
+            total_stored += cluster_rb.get_stored_size()
+
+        samples_rb = self.rb.sample(batch_size * self.rb.get_stored_size() // total_stored)
+
+        samples_cluster_rbs = []
+        for cluster_rb in self.cluster_rbs:
+            samples_cluster_rbs.append(cluster_rb.sample(batch_size * cluster_rb.get_stored_size() // total_stored))
+
+        samples_all = {}
+        for key in samples_rb:
+            samples_all[key] = np.concatenate([samples_rb[key], *[cluster_rb[key]
+                                              for cluster_rb in samples_cluster_rbs]])
+
+        return samples_all
+
     def _learn(self):
-        sample = self.rb.sample(self.batch_size)
+        if self.mer:
+            sample = self._sample(self.batch_size)
+        else:
+            sample = self.rb.sample(self.batch_size)
         obs = torch.Tensor(sample['obs'])
         action = torch.Tensor(sample['action'])
         reward = torch.Tensor(sample['reward'])
