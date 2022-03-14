@@ -70,9 +70,6 @@ class OrigTD3Agent:
         if self.t >= self.start_timesteps:
             self._learn()
 
-        if done:
-            self.rb.on_episode_end()
-
     def save(self):
         os.makedirs(f"saved_networks/orig/{self.env_name}", exist_ok=True)
         torch.save({"actor": self.actor.state_dict(),
@@ -90,7 +87,6 @@ class OrigTD3Agent:
         self.critic_target = deepcopy(self.critic)
 
         self.t = checkpoint["t"]
-
 
     def _learn(self):
         sample = self.rb.sample(self.batch_size)

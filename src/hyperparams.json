@@ -1,5 +1,5 @@
 {
-    "max_episodes": 500,
+    "max_episodes": 1000,
     "expl_noise": 0.1,
     "start_timesteps": 25000,
     "buffer_size": 200000,

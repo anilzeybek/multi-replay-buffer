@@ -91,9 +91,6 @@ class MERTD3Agent:
 
             self._learn()
 
-        if done:
-            self.intermediate_rb.on_episode_end()
-
     def save(self):
         os.makedirs(f"saved_networks/mer/{self.env_name}", exist_ok=True)
         torch.save({"actor": self.actor.state_dict(),

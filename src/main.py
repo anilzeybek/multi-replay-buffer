@@ -7,7 +7,6 @@ import argparse
 from orig_td3_agent import OrigTD3Agent
 from mer_td3_agent import MERTD3Agent
 from time import time
-import pandas as pd
 
 
 def read_hyperparams():
@@ -107,6 +106,7 @@ def train(env, mer, cont):
     start = time()
     scores = []
 
+    finish_episode = 0
     max_episodes = hyperparams['max_episodes']
     for i in range(1, max_episodes+1):
         obs = env.reset()
@@ -121,25 +121,22 @@ def train(env, mer, cont):
             obs = next_obs
             score += reward
 
-        if i % 100 == 0:
-            agent.save()
+        if i % 10 == 0:
+            print(f'ep: {i} | avg of last 10 scores: {np.mean(scores[-10:])}')
 
-        print(f'ep: {i}/{max_episodes} | score: {score:.2f}')
         scores.append(score)
 
         if np.mean(scores[-10:]) >= 200:
             print("200 score reached in mean of last 10 episodes")
+            finish_episode = i
             break
 
     end = time()
     print("training completed, elapsed time: ", end - start)
-
-    moving_avg = pd.DataFrame(scores).rolling(window=10).mean().dropna()
-
-    file_name = "mer_results.csv" if mer else "orig_results.csv"
-    moving_avg.to_csv(file_name, sep=' ', index=False, header=False)
+    print()
 
     agent.save()
+    return finish_episode
 
 
 def main():
@@ -152,10 +149,16 @@ def main():
     env.seed(args.seed)
     env.action_space.seed(args.seed)
 
+    print(f"env: {args.env_name} | mer: {args.mer} | seed: {args.seed}")
+
     if args.test:
         test(env, args.mer)
     else:
-        train(env, args.mer, args.cont)
+        print("------TRAIN")
+        finish_episode = train(env, args.mer, args.cont)
+
+        with open("./results.txt", "a") as f:
+            f.write(f"env: {args.env_name} | mer: {args.mer} | seed: {args.seed} | result: {finish_episode}\n")
 
 
 if __name__ == "__main__":
