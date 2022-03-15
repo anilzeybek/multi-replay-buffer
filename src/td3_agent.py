@@ -142,15 +142,15 @@ class TD3Agent:
         self.rb.clear()
 
     def _sample(self, batch_size):
-        total = self.rb.get_stored_size()
+        total = self.rb.get_stored_size() ** 0.85
         for cluster_rb in self.cluster_rbs:
-            total += cluster_rb.get_stored_size()
+            total += cluster_rb.get_stored_size() ** 0.85
 
         samples_cluster_rbs = []
         for cluster_rb in self.cluster_rbs:
-            samples_cluster_rbs.append(cluster_rb.sample(batch_size * cluster_rb.get_stored_size() // total))
+            samples_cluster_rbs.append(cluster_rb.sample(int(batch_size * cluster_rb.get_stored_size()**0.85 / total) + 1))
 
-        samples_rb = self.rb.sample(batch_size * self.rb.get_stored_size() // total)
+        samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**0.85 / total))
 
         samples_all = {}
         for key in samples_rb:
