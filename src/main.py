@@ -4,7 +4,7 @@ import numpy as np
 import json
 import torch
 import argparse
-from orig_td3_agent import OrigTD3Agent as TD3Agent
+from td3_agent import TD3Agent
 from time import time
 
 
@@ -16,11 +16,13 @@ def read_hyperparams():
 
 def get_args():
     parser = argparse.ArgumentParser(description='options')
-    parser.add_argument('--env_name', type=str, default='LunarLanderContinuous-v2')
+    parser.add_argument('--env_name', type=str, required=True)
+    parser.add_argument('--solve_score', type=int, required=True)
     parser.add_argument('--mer', default=False, action='store_true')
+    parser.add_argument('--seed', type=int, default=0)
+
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--cont', default=False, action='store_true', help="use already saved policy in training")
-    parser.add_argument('--seed', type=int, default=0)
 
     args = parser.parse_args()
     return args
@@ -52,7 +54,7 @@ def test(env, mer):
         print(f"score: {score:.2f}")
 
 
-def train(env, mer, cont):
+def train(env, mer, cont, solve_score):
     hyperparams = read_hyperparams()
 
     agent = TD3Agent(
@@ -71,7 +73,8 @@ def train(env, mer, cont):
         policy_noise=hyperparams['policy_noise'],
         noise_clip=hyperparams['noise_clip'],
         policy_freq=hyperparams['policy_freq'],
-        mer=mer
+        mer=mer,
+        number_of_rbs=hyperparams['number_of_rbs']
     )
 
     if cont:
@@ -100,7 +103,7 @@ def train(env, mer, cont):
 
         scores.append(score)
 
-        if np.mean(scores[-10:]) >= 200:
+        if np.mean(scores[-10:]) >= solve_score:
             print("200 score reached in mean of last 10 episodes")
             finish_episode = i
             break
@@ -129,7 +132,7 @@ def main():
         test(env, args.mer)
     else:
         print("------TRAIN")
-        finish_episode = train(env, args.mer, args.cont)
+        finish_episode = train(env, args.mer, args.cont, args.solve_score)
 
         with open("./results.txt", "a") as f:
             f.write(f"env: {args.env_name} | mer: {args.mer} | seed: {args.seed} | result: {finish_episode}\n")

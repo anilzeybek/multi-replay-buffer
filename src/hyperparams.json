@@ -1,5 +1,5 @@
 {
-    "max_episodes": 1000,
+    "max_episodes": 4000,
     "expl_noise": 0.1,
     "start_timesteps": 25000,
     "buffer_size": 200000,
@@ -10,5 +10,6 @@
     "tau": 0.005,
     "policy_noise": 0.2,
     "noise_clip": 0.5,
-    "policy_freq": 2
+    "policy_freq": 2,
+    "number_of_rbs": 4
 }
