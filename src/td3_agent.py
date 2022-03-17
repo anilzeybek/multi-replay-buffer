@@ -49,7 +49,7 @@ class TD3Agent:
 
         if self.mer:
             self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs)]
-            self.clustering_model = GaussianMixture(n_components=number_of_rbs)
+            self.clustering_model = GaussianMixture(n_components=number_of_rbs, tol=5e-2)
 
         self.t = 0
 
