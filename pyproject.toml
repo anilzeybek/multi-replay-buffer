@@ -14,6 +14,7 @@ cpprb = "^10.5.1"
 pyglet = "^1.5.21"
 pandas = "^1.4.1"
 scikit-learn = "^1.0.2"
+mujoco-py = "^2.1.2"
 
 [tool.poetry.dev-dependencies]
 
