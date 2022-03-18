@@ -49,7 +49,7 @@ class TD3Agent:
 
         if self.mer:
             self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs)]
-            self.clustering_model = GaussianMixture(n_components=number_of_rbs, tol=5e-2)
+            self.clustering_model = GaussianMixture(n_components=number_of_rbs, tol=5e-3)
 
         self.t = 0
 
@@ -142,15 +142,15 @@ class TD3Agent:
         self.rb.clear()
 
     def _sample(self, batch_size):
-        total = self.rb.get_stored_size() ** 0.85
+        total = self.rb.get_stored_size() ** 0.9
         for cluster_rb in self.cluster_rbs:
-            total += cluster_rb.get_stored_size() ** 0.85
+            total += cluster_rb.get_stored_size() ** 0.9
 
         samples_cluster_rbs = []
         for cluster_rb in self.cluster_rbs:
-            samples_cluster_rbs.append(cluster_rb.sample(int(batch_size * cluster_rb.get_stored_size()**0.85 / total) + 1))
+            samples_cluster_rbs.append(cluster_rb.sample(int(batch_size * cluster_rb.get_stored_size()**0.9 / total) + 1))
 
-        samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**0.85 / total))
+        samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**0.9 / total))
 
         samples_all = {}
         for key in samples_rb:
