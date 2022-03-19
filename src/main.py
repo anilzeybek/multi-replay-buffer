@@ -1,12 +1,15 @@
-import random
-import gym
-import numpy as np
-import json
-import torch
 import argparse
-from td3_agent import TD3Agent
+import json
+import os
+import random
 from time import time
+
+import gym
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+
+from td3_agent import TD3Agent
 
 
 def read_hyperparams():
@@ -139,9 +142,10 @@ def main():
 
         ma_scores = moving_average(scores, n=10)
 
+        os.makedirs("results/", exist_ok=True)
+
         plt.plot(ma_scores)
         plt.savefig(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.png")
-
         np.savetxt(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.txt", ma_scores)
 
 

@@ -1,12 +1,14 @@
+import os
 from copy import deepcopy
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from models import Actor, Critic
 from cpprb import ReplayBuffer
 from sklearn.mixture import GaussianMixture
-import os
+
+from models import Actor, Critic
 
 
 class TD3Agent:
