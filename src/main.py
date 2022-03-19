@@ -6,6 +6,7 @@ import torch
 import argparse
 from td3_agent import TD3Agent
 from time import time
+import matplotlib.pyplot as plt
 
 
 def read_hyperparams():
@@ -17,7 +18,6 @@ def read_hyperparams():
 def get_args():
     parser = argparse.ArgumentParser(description='options')
     parser.add_argument('--env_name', type=str, required=True)
-    parser.add_argument('--solve_score', type=int, required=True)
     parser.add_argument('--mer', default=False, action='store_true')
     parser.add_argument('--seed', type=int, default=0)
 
@@ -54,7 +54,7 @@ def test(env, mer):
         print(f"score: {score:.2f}")
 
 
-def train(env, mer, cont, solve_score):
+def train(env, mer, cont):
     hyperparams = read_hyperparams()
 
     agent = TD3Agent(
@@ -84,13 +84,14 @@ def train(env, mer, cont, solve_score):
     start = time()
     scores = []
 
-    finish_episode = 0
-    max_episodes = hyperparams['max_episodes']
-    for i in range(1, max_episodes+1):
+    t = 0
+    while t < 5e+5:
         obs = env.reset()
         score = 0
         done = False
         while not done:
+            t += 1
+
             action = agent.act(obs)
             next_obs, reward, done, _ = env.step(action)
             real_done = done if env._elapsed_steps < env._max_episode_steps else False
@@ -99,22 +100,18 @@ def train(env, mer, cont, solve_score):
             obs = next_obs
             score += reward
 
-        if i % 10 == 0:
-            print(f'ep: {i} | avg of last 10 scores: {np.mean(scores[-10:])}')
-
         scores.append(score)
 
-        if np.mean(scores[-10:]) >= solve_score:
-            print("200 score reached in mean of last 10 episodes")
-            finish_episode = i
-            break
+        if t % 100 == 0:
+            print(f'timestep: {t} | avg of last 10 scores: {np.mean(scores[-10:])}')
 
     end = time()
     print("training completed, elapsed time: ", end - start)
     print()
 
     agent.save()
-    return finish_episode
+
+    return scores
 
 
 def main():
@@ -133,10 +130,19 @@ def main():
         test(env, args.mer)
     else:
         print("------TRAIN")
-        finish_episode = train(env, args.mer, args.cont, args.solve_score)
+        scores = train(env, args.mer, args.cont)
 
-        with open("./results.txt", "a") as f:
-            f.write(f"env: {args.env_name} | mer: {args.mer} | seed: {args.seed} | result: {finish_episode}\n")
+        def moving_average(a, n=3):
+            ret = np.cumsum(a, dtype=float)
+            ret[n:] = ret[n:] - ret[:-n]
+            return ret[n - 1:] / n
+
+        ma_scores = moving_average(scores, n=10)
+
+        plt.plot(ma_scores)
+        plt.savefig(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.png")
+
+        np.savetxt(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.txt", ma_scores)
 
 
 if __name__ == "__main__":
