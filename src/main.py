@@ -74,7 +74,8 @@ def train(env, mer, cont, solve_score):
         noise_clip=hyperparams['noise_clip'],
         policy_freq=hyperparams['policy_freq'],
         mer=mer,
-        number_of_rbs=hyperparams['number_of_rbs']
+        number_of_rbs=hyperparams['number_of_rbs'],
+        pow=hyperparams['pow']
     )
 
     if cont:

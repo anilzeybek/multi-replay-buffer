@@ -10,7 +10,7 @@ import os
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, mer=False, number_of_rbs=0):
+    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, mer=False, number_of_rbs=0, pow=1):
         self.max_action = max(action_bounds["high"])
 
         self.obs_dim = obs_dim
@@ -29,6 +29,7 @@ class TD3Agent:
         self.noise_clip = noise_clip * self.max_action
         self.policy_freq = policy_freq
         self.mer = mer
+        self.pow = pow
 
         self.actor = Actor(obs_dim, action_dim, self.max_action)
         self.actor_target = deepcopy(self.actor)
@@ -142,15 +143,15 @@ class TD3Agent:
         self.rb.clear()
 
     def _sample(self, batch_size):
-        total = self.rb.get_stored_size() ** 0.9
+        total = self.rb.get_stored_size() ** self.pow
         for cluster_rb in self.cluster_rbs:
-            total += cluster_rb.get_stored_size() ** 0.9
+            total += cluster_rb.get_stored_size() ** self.pow
 
         samples_cluster_rbs = []
         for cluster_rb in self.cluster_rbs:
-            samples_cluster_rbs.append(cluster_rb.sample(int(batch_size * cluster_rb.get_stored_size()**0.9 / total) + 1))
+            samples_cluster_rbs.append(cluster_rb.sample(int(batch_size * cluster_rb.get_stored_size()**self.pow / total) + 1))
 
-        samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**0.9 / total))
+        samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**self.pow / total))
 
         samples_all = {}
         for key in samples_rb:

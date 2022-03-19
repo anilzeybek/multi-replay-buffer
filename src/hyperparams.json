@@ -11,5 +11,6 @@
     "policy_noise": 0.2,
     "noise_clip": 0.5,
     "policy_freq": 2,
-    "number_of_rbs": 8
+    "number_of_rbs": 8,
+    "pow": 0.9
 }
