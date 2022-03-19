@@ -85,7 +85,7 @@ def train(env, mer, cont):
     scores = []
 
     t = 0
-    while t < 5e+5:
+    while t < 2e+5:
         obs = env.reset()
         score = 0
         done = False
@@ -102,7 +102,7 @@ def train(env, mer, cont):
 
         scores.append(score)
 
-        if t % 100 == 0:
+        if len(scores) % 100 == 0:
             print(f'timestep: {t} | avg of last 10 scores: {np.mean(scores[-10:])}')
 
     end = time()
