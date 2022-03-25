@@ -83,18 +83,18 @@ class TD3Agent:
 
             self._learn()
 
-    def save(self):
+    def save(self, seed):
         identifier = "mer" if self.mer else "orig"
 
-        os.makedirs(f"saved_networks/{identifier}/{self.env_name}", exist_ok=True)
+        os.makedirs(f"saved_networks/{identifier}/{seed}/{self.env_name}", exist_ok=True)
         torch.save({"actor": self.actor.state_dict(),
                     "critic": self.critic.state_dict(),
                     "t": self.t
-                    }, f"saved_networks/{identifier}/{self.env_name}/actor_critic.pt")
+                    }, f"saved_networks/{identifier}/{seed}/{self.env_name}/actor_critic.pt")
 
-    def load(self):
+    def load(self, seed):
         identifier = "mer" if self.mer else "orig"
-        checkpoint = torch.load(f"saved_networks/{identifier}/{self.env_name}/actor_critic.pt")
+        checkpoint = torch.load(f"saved_networks/{identifier}/{seed}/{self.env_name}/actor_critic.pt")
 
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_target = deepcopy(self.actor)
@@ -151,7 +151,8 @@ class TD3Agent:
 
         samples_cluster_rbs = []
         for cluster_rb in self.cluster_rbs:
-            samples_cluster_rbs.append(cluster_rb.sample(int(batch_size * cluster_rb.get_stored_size()**self.pow / total) + 1))
+            samples_cluster_rbs.append(cluster_rb.sample(
+                int(batch_size * cluster_rb.get_stored_size()**self.pow / total) + 1))
 
         samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**self.pow / total))
 

@@ -5,9 +5,9 @@ import random
 from time import time
 
 import gym
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from td3_agent import TD3Agent
 
@@ -57,7 +57,7 @@ def test(env, mer):
         print(f"score: {score:.2f}")
 
 
-def train(env, mer, cont):
+def train(env, mer, cont, seed):
     hyperparams = read_hyperparams()
 
     agent = TD3Agent(
@@ -87,32 +87,26 @@ def train(env, mer, cont):
     start = time()
     scores = []
 
-    t = 0
-    while t < 2e+5:
-        obs = env.reset()
-        score = 0
-        done = False
-        while not done:
-            t += 1
+    obs = env.reset()
+    score = 0
+    for _ in tqdm(range(int(2e+5))):
+        action = agent.act(obs)
+        next_obs, reward, done, _ = env.step(action)
 
-            action = agent.act(obs)
-            next_obs, reward, done, _ = env.step(action)
-            real_done = done if env._elapsed_steps < env._max_episode_steps else False
+        agent.step(obs, action, reward, next_obs, done)
+        obs = next_obs
+        score += reward
 
-            agent.step(obs, action, reward, next_obs, real_done)
-            obs = next_obs
-            score += reward
-
-        scores.append(score)
-
-        if len(scores) % 100 == 0:
-            print(f'timestep: {t} | avg of last 10 scores: {np.mean(scores[-10:])}')
+        if done:
+            scores.append(score)
+            obs = env.reset()
+            score = 0
 
     end = time()
     print("training completed, elapsed time: ", end - start)
     print()
 
-    agent.save()
+    agent.save(seed)
 
     return scores
 
@@ -132,10 +126,9 @@ def main():
     if args.test:
         test(env, args.mer)
     else:
-        print("------TRAIN")
-        scores = train(env, args.mer, args.cont)
+        scores = train(env, args.mer, args.cont, args.seed)
 
-        def moving_average(a, n=3):
+        def moving_average(a, n):
             ret = np.cumsum(a, dtype=float)
             ret[n:] = ret[n:] - ret[:-n]
             return ret[n - 1:] / n
@@ -143,9 +136,6 @@ def main():
         ma_scores = moving_average(scores, n=10)
 
         os.makedirs("results/", exist_ok=True)
-
-        plt.plot(ma_scores)
-        plt.savefig(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.png")
         np.savetxt(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.txt", ma_scores)
 
 
