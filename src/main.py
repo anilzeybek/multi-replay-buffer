@@ -7,7 +7,6 @@ from time import time
 import gym
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from td3_agent import TD3Agent
 
@@ -89,7 +88,7 @@ def train(env, mer, cont, seed):
 
     obs = env.reset()
     score = 0
-    for _ in tqdm(range(int(2e+5))):
+    for _ in range(int(5e+5)):
         action = agent.act(obs)
         next_obs, reward, done, _ = env.step(action)
 
