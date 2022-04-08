@@ -30,7 +30,7 @@ def get_args():
     return args
 
 
-def test(env, mer):
+def test(env, mer, seed):
     agent = TD3Agent(
         obs_dim=env.observation_space.shape[0],
         action_dim=env.action_space.shape[0],
@@ -39,7 +39,7 @@ def test(env, mer):
         mer=mer
     )
 
-    agent.load()
+    agent.load(seed)
 
     for _ in range(1, 1000):
         obs = env.reset()
@@ -123,7 +123,7 @@ def main():
     print(f"env: {args.env_name} | mer: {args.mer} | seed: {args.seed}")
 
     if args.test:
-        test(env, args.mer)
+        test(env, args.mer, args.seed)
     else:
         scores = train(env, args.mer, args.cont, args.seed)
 
