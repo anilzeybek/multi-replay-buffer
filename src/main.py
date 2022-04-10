@@ -77,7 +77,8 @@ def train(env, mer, cont, seed):
         policy_freq=hyperparams['policy_freq'],
         mer=mer,
         number_of_rbs=hyperparams['number_of_rbs'],
-        pow=hyperparams['pow']
+        alpha=hyperparams['alpha'],
+        beta=hyperparams['beta']
     )
 
     if cont:
@@ -88,7 +89,7 @@ def train(env, mer, cont, seed):
 
     obs = env.reset()
     score = 0
-    for _ in range(int(5e+5)):
+    for i in range(1, int(5e+5)+1):
         action = agent.act(obs)
         next_obs, reward, done, _ = env.step(action)
 
@@ -100,6 +101,9 @@ def train(env, mer, cont, seed):
             scores.append(score)
             obs = env.reset()
             score = 0
+
+        if i % 1000 == 0:
+            print(f"{i} | {scores[-1]:.2f}")
 
     end = time()
     print("training completed, elapsed time: ", end - start)

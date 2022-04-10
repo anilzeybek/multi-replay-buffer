@@ -1,5 +1,4 @@
 {
-    "max_episodes": 4000,
     "expl_noise": 0.1,
     "start_timesteps": 25000,
     "buffer_size": 200000,
@@ -12,5 +11,6 @@
     "noise_clip": 0.5,
     "policy_freq": 2,
     "number_of_rbs": 4,
-    "pow": 0.9
+    "alpha": 0.85,
+    "beta": 0.5
 }

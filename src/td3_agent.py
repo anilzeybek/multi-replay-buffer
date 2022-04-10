@@ -12,7 +12,7 @@ from models import Actor, Critic
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, mer=False, number_of_rbs=0, pow=1):
+    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, mer=False, number_of_rbs=0, alpha=1, beta=1):
         self.max_action = max(action_bounds["high"])
 
         self.obs_dim = obs_dim
@@ -31,7 +31,8 @@ class TD3Agent:
         self.noise_clip = noise_clip * self.max_action
         self.policy_freq = policy_freq
         self.mer = mer
-        self.pow = pow
+        self.alpha = alpha
+        self.beta = beta
 
         self.actor = Actor(obs_dim, action_dim, self.max_action)
         self.actor_target = deepcopy(self.actor)
@@ -144,30 +145,41 @@ class TD3Agent:
 
         self.rb.clear()
 
-    def _sample(self, batch_size):
-        total = self.rb.get_stored_size() ** self.pow
-        for cluster_rb in self.cluster_rbs:
-            total += cluster_rb.get_stored_size() ** self.pow
+    def _sample(self, batch_size, beta=1):
+        is_weights = []
 
-        samples_cluster_rbs = []
-        for cluster_rb in self.cluster_rbs:
-            samples_cluster_rbs.append(cluster_rb.sample(
-                int(batch_size * cluster_rb.get_stored_size()**self.pow / total) + 1))
+        total = 0
+        total_weighted = 0
+        for rb in [*self.cluster_rbs, self.rb]:
+            rb_size = rb.get_stored_size()
 
-        samples_rb = self.rb.sample(int(batch_size * self.rb.get_stored_size()**self.pow / total))
+            total += rb_size
+            total_weighted += rb_size ** self.alpha
 
-        samples_all = {}
-        for key in samples_rb:
-            samples_all[key] = np.concatenate([samples_rb[key], *[cluster_rb[key]
-                                              for cluster_rb in samples_cluster_rbs]])
+        samples = []
+        for rb in [*self.cluster_rbs, self.rb]:
+            normal_sample_amount = int(batch_size * rb.get_stored_size() / total)
+            weighted_sample_amount = int(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
 
-        return samples_all
+            samples.append(rb.sample(weighted_sample_amount))
+            for _ in range(weighted_sample_amount):
+                is_weights.append((normal_sample_amount/weighted_sample_amount)**beta)
+
+        samples_dict = {}
+        for key in samples[0]:
+            samples_dict[key] = np.concatenate([*[rb[key] for rb in samples]])
+
+        return samples_dict, torch.Tensor(is_weights).unsqueeze(dim=1)
 
     def _learn(self):
         if self.mer:
-            sample = self._sample(self.batch_size)
+            sample, is_weights = self._sample(self.batch_size, beta=self.beta)
+            self.beta = min(1.0, self.beta + 1e-6)
+            # TODO: 1e-6 should be dynamic based on max timesteps
         else:
             sample = self.rb.sample(self.batch_size)
+            is_weights = 1
+
         obs = torch.Tensor(sample['obs'])
         action = torch.Tensor(sample['action'])
         reward = torch.Tensor(sample['reward'])
@@ -188,14 +200,14 @@ class TD3Agent:
             Q_target_next = torch.min(Q1_target_next, Q2_target_next)
             Q_target = reward + self.gamma * Q_target_next * (1 - done)
 
-        critic_loss = F.mse_loss(Q_current1, Q_target) + F.mse_loss(Q_current2, Q_target)
+        critic_loss = (is_weights * (F.mse_loss(Q_current1, Q_target) + F.mse_loss(Q_current2, Q_target))).mean()
 
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
 
         if self.t % self.policy_freq == 0:
-            actor_loss = -self.critic(obs, self.actor(obs))[0].mean()
+            actor_loss = (is_weights * -self.critic(obs, self.actor(obs))[0]).mean()
 
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
