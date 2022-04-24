@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from cpprb import ReplayBuffer
-from sklearn.mixture import GaussianMixture
+from sklearn.cluster import Birch
 
 from models import Actor, Critic
 
@@ -53,7 +53,7 @@ class TD3Agent:
 
         if self.mer:
             self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs)]
-            self.clustering_model = GaussianMixture(n_components=number_of_rbs, tol=1e-2)
+            self.clustering_model = Birch(n_clusters=number_of_rbs)
 
         self.t = 0
 

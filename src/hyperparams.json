@@ -1,6 +1,6 @@
 {
     "expl_noise": 0.1,
-    "start_timesteps": 25000,
+    "start_timesteps": 10000,
     "buffer_size": 200000,
     "actor_lr": 1e-3,
     "critic_lr": 1e-3,
