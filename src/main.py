@@ -54,9 +54,8 @@ def test(env, mer, seed):
 
         scores.append(score)
 
-    identifier = "mer" if mer else "orig"
     with open("result.txt", "a") as f:
-        f.write(f"{identifier}-{seed}-{env.unwrapped.spec.id}: {np.array(scores).mean()}\n")
+        f.write(f"{np.array(scores).mean()}\n")
 
 
 def train(env, mer, cont, seed):
