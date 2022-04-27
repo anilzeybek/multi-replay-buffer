@@ -40,20 +40,23 @@ def test(env, mer, seed):
     )
 
     agent.load(seed)
-
-    for _ in range(1, 1000):
+    scores = []
+    for _ in range(1, 10):
         obs = env.reset()
         score = 0
         done = False
         while not done:
             action = agent.act(obs, train_mode=False)
             next_obs, reward, done, _ = env.step(action)
-            env.render()
 
             obs = next_obs
             score += reward
 
-        print(f"score: {score:.2f}")
+        scores.append(score)
+
+    identifier = "mer" if mer else "orig"
+    with open("result.txt", "a") as f:
+        f.write(f"{identifier}-{seed}-{env.unwrapped.spec.id}: {np.array(scores).mean()}\n")
 
 
 def train(env, mer, cont, seed):
