@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from cpprb import ReplayBuffer
-from sklearn.cluster import Birch
+from sklearn.cluster import KMeans
 
 from models import Actor, Critic
 
@@ -53,7 +53,7 @@ class TD3Agent:
 
         if self.mer:
             self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs)]
-            self.clustering_model = Birch(n_clusters=number_of_rbs)
+            self.clustering_model = KMeans(n_clusters=number_of_rbs, tol=1e-2)
 
         self.t = 0
 
