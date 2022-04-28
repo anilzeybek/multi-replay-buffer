@@ -10,7 +10,7 @@
     "policy_noise": 0.2,
     "noise_clip": 0.5,
     "policy_freq": 2,
-    "number_of_rbs": 4,
+    "number_of_rbs": 8,
     "alpha": 0.85,
     "beta": 0.5
 }

@@ -53,7 +53,7 @@ class TD3Agent:
 
         if self.mer:
             self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs)]
-            self.clustering_model = KMeans(n_clusters=number_of_rbs, tol=1e-2)
+            self.clustering_model = KMeans(n_clusters=number_of_rbs)
 
         self.t = 0
 
@@ -174,8 +174,8 @@ class TD3Agent:
     def _learn(self):
         if self.mer:
             sample, is_weights = self._sample(self.batch_size, beta=self.beta)
-            self.beta = min(1.0, self.beta + 1e-6)
-            # TODO: 1e-6 should be dynamic based on max timesteps
+            self.beta = min(1.0, self.beta + 2.5e-6)
+            # TODO: 2.5e-6 should be dynamic based on max timesteps: (1-self.beta) / max_timesteps
         else:
             sample = self.rb.sample(self.batch_size)
             is_weights = 1
