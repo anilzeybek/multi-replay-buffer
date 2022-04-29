@@ -158,12 +158,12 @@ class TD3Agent:
 
         samples = []
         for rb in [*self.cluster_rbs, self.rb]:
-            normal_sample_amount = round(batch_size * rb.get_stored_size() / total)
-            weighted_sample_amount = round(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
+            normal_sample_amount = int(batch_size * rb.get_stored_size() / total)
+            weighted_sample_amount = int(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
 
             samples.append(rb.sample(weighted_sample_amount))
-            if weighted_sample_amount != 0:
-                is_weights += weighted_sample_amount * [(normal_sample_amount/weighted_sample_amount)**beta]
+            for _ in range(weighted_sample_amount):
+                is_weights.append((normal_sample_amount/weighted_sample_amount)**beta)
 
         samples_dict = {}
         for key in samples[0]:
