@@ -79,7 +79,7 @@ class TD3Agent:
         self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, done=done)
 
         if self.t >= self.start_timesteps:
-            if self.mer and self.t % 10000 == 0:
+            if self.mer and self.t % 25000 == 0:
                 self._cluster()
 
             self._learn()
@@ -158,20 +158,18 @@ class TD3Agent:
 
         samples = []
         for rb in [*self.cluster_rbs, self.rb]:
-            normal_sample_amount = int(batch_size * rb.get_stored_size() / total)
-            weighted_sample_amount = int(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
+            normal_sample_amount = round(batch_size * rb.get_stored_size() / total)
+            weighted_sample_amount = round(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
 
             samples.append(rb.sample(weighted_sample_amount))
             if weighted_sample_amount != 0:
                 is_weights += weighted_sample_amount * [(normal_sample_amount/weighted_sample_amount)**beta]
 
-        normalized_is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
-
         samples_dict = {}
         for key in samples[0]:
             samples_dict[key] = np.concatenate([*[rb[key] for rb in samples]])
 
-        return samples_dict, normalized_is_weights
+        return samples_dict, torch.Tensor(is_weights).unsqueeze(dim=1)
 
     def _learn(self):
         if self.mer:
