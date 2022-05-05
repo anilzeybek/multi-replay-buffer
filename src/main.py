@@ -1,23 +1,24 @@
 import argparse
-import os
 import random
 from time import time
+from datetime import datetime
 
 import gym
 import numpy as np
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 from td3_agent import TD3Agent
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='options')
-    parser.add_argument('--env_name', type=str, required=True)
+    parser.add_argument('--env_name', type=str, default='HalfCheetah-v3')
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--cont', default=False, action='store_true', help="use already saved policy in training")
     parser.add_argument('--seed', type=int, default=0)
 
-    parser.add_argument("--max_timesteps", type=int, default=int(1.5e+5))
+    parser.add_argument("--max_timesteps", type=int, default=int(2e+5))
     parser.add_argument("--expl_noise", type=float, default=0.1)
     parser.add_argument("--start_timesteps", type=int, default=10000)
     parser.add_argument("--buffer_size", type=int, default=200000)
@@ -29,8 +30,8 @@ def get_args():
     parser.add_argument("--policy_noise", type=float, default=0.2)
     parser.add_argument("--noise_clip", type=float, default=0.5)
     parser.add_argument("--policy_freq", type=int, default=2)
-    parser.add_argument("--mer", default=False, action='store_true')
-    parser.add_argument("--number_of_rbs", type=int, default=8)
+    parser.add_argument("--number_of_rbs", type=int, default=1)
+    parser.add_argument("--clustering_freq", type=int, default=25000)
     parser.add_argument("--alpha", type=int, default=0.8)
     parser.add_argument("--beta", type=int, default=0.5)
 
@@ -43,13 +44,12 @@ def test(env, args):
         obs_dim=env.observation_space.shape[0],
         action_dim=env.action_space.shape[0],
         action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-        env_name=env.unwrapped.spec.id,
-        mer=args.mer
+        env_name=args.env_name
     )
     agent.load(args.seed)
 
     scores = []
-    for _ in range(1, 10):
+    for _ in range(1, 20):
         obs = env.reset()
         score = 0
         done = False
@@ -71,7 +71,7 @@ def train(env, args):
         obs_dim=env.observation_space.shape[0],
         action_dim=env.action_space.shape[0],
         action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-        env_name=env.unwrapped.spec.id,
+        env_name=args.env_name,
         expl_noise=args.expl_noise,
         start_timesteps=args.start_timesteps,
         buffer_size=args.buffer_size,
@@ -83,8 +83,8 @@ def train(env, args):
         policy_noise=args.policy_noise,
         noise_clip=args.noise_clip,
         policy_freq=args.policy_freq,
-        mer=args.mer,
         number_of_rbs=args.number_of_rbs,
+        clustering_freq=args.clustering_freq,
         alpha=args.alpha,
         beta=args.beta
     )
@@ -94,6 +94,7 @@ def train(env, args):
 
     start = time()
     scores = []
+    writer = SummaryWriter(f"./checkpoints/{args.env_name}-{args.seed}-{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}")
 
     obs = env.reset()
     score = 0
@@ -106,18 +107,25 @@ def train(env, args):
         score += reward
 
         if done:
+            writer.add_scalar("score", score, len(scores))
             scores.append(score)
+
             obs = env.reset()
             score = 0
 
         if i % 1000 == 0:
-            print(f"{i} | {scores[-1]:.2f}")
+            print(f"{i}/{args.max_timesteps} | {scores[-1]:.2f}")
 
     end = time()
     print(f"training completed, elapsed time: {end - start}\n")
 
+    writer.add_hparams({
+        'number_of_rbs': args.number_of_rbs,
+        'clustering_freq': args.clustering_freq,
+        'alpha': args.alpha
+    }, {"score": np.array(scores[-50:]).mean()})
+
     agent.save(args.seed)
-    return scores
 
 
 def main():
@@ -130,22 +138,17 @@ def main():
     env.seed(args.seed)
     env.action_space.seed(args.seed)
 
-    print(f"env: {args.env_name} | mer: {args.mer} | seed: {args.seed}")
+    print('env: ', args.env_name)
+    print('seed: ', args.seed)
+    print('number_of_rbs: ', args.number_of_rbs)
+    print('clustering_freq: ', args.clustering_freq)
+    print('alpha: ', args.alpha)
+    print('---')
 
     if args.test:
         test(env, args)
     else:
-        scores = train(env, args)
-
-        def moving_average(a, n):
-            ret = np.cumsum(a, dtype=float)
-            ret[n:] = ret[n:] - ret[:-n]
-            return ret[n - 1:] / n
-
-        ma_scores = moving_average(scores, n=10)
-
-        os.makedirs("results/", exist_ok=True)
-        np.savetxt(f"results/{args.env_name}_s{args.seed}_mer{args.mer}.txt", ma_scores)
+        train(env, args)
 
 
 if __name__ == "__main__":

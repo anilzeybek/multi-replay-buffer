@@ -3,7 +3,6 @@ from copy import deepcopy
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 import torch.optim as optim
 from cpprb import ReplayBuffer
 from sklearn.cluster import KMeans
@@ -12,7 +11,7 @@ from models import Actor, Critic
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, mer=False, number_of_rbs=0, alpha=1, beta=1):
+    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, number_of_rbs=1, clustering_freq=10000, alpha=1, beta=1):
         self.max_action = max(action_bounds["high"])
 
         self.obs_dim = obs_dim
@@ -30,7 +29,8 @@ class TD3Agent:
         self.policy_noise = policy_noise * self.max_action
         self.noise_clip = noise_clip * self.max_action
         self.policy_freq = policy_freq
-        self.mer = mer
+        self.number_of_rbs = number_of_rbs
+        self.clustering_freq = clustering_freq
         self.alpha = alpha
         self.beta = beta
 
@@ -51,9 +51,9 @@ class TD3Agent:
             "done": {}
         })
 
-        if self.mer:
-            self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs)]
-            self.clustering_model = KMeans(n_clusters=number_of_rbs)
+        if number_of_rbs > 1:
+            self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs-1)]
+            self.clustering_model = KMeans(n_clusters=number_of_rbs-1)
 
         self.t = 0
 
@@ -79,23 +79,21 @@ class TD3Agent:
         self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, done=done)
 
         if self.t >= self.start_timesteps:
-            if self.mer and self.t % 25000 == 0:
+            if self.number_of_rbs > 1 and self.t % self.clustering_freq == 0:
                 self._cluster()
 
             self._learn()
 
     def save(self, seed):
-        identifier = "mer" if self.mer else "orig"
-
-        os.makedirs(f"saved_networks/{identifier}/{seed}/{self.env_name}", exist_ok=True)
+        os.makedirs(f"checkpoints", exist_ok=True)
         torch.save({"actor": self.actor.state_dict(),
                     "critic": self.critic.state_dict(),
                     "t": self.t
-                    }, f"saved_networks/{identifier}/{seed}/{self.env_name}/actor_critic.pt")
+                    }, f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
 
     def load(self, seed):
-        identifier = "mer" if self.mer else "orig"
-        checkpoint = torch.load(f"saved_networks/{identifier}/{seed}/{self.env_name}/actor_critic.pt")
+        checkpoint = torch.load(
+            f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
 
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_target = deepcopy(self.actor)
@@ -174,7 +172,7 @@ class TD3Agent:
         return samples_dict, normalized_is_weights
 
     def _learn(self):
-        if self.mer:
+        if self.number_of_rbs > 1:
             sample, is_weights = self._sample(self.batch_size, beta=self.beta)
             self.beta = min(1.0, self.beta + 2.5e-6)
             # TODO: 2.5e-6 should be dynamic based on max timesteps: (1-self.beta) / max_timesteps
