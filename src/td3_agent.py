@@ -158,18 +158,20 @@ class TD3Agent:
 
         samples = []
         for rb in [*self.cluster_rbs, self.rb]:
-            normal_sample_amount = int(batch_size * rb.get_stored_size() / total)
-            weighted_sample_amount = int(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
+            normal_sample_amount = round(batch_size * rb.get_stored_size() / total)
+            weighted_sample_amount = round(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
 
-            samples.append(rb.sample(weighted_sample_amount))
-            for _ in range(weighted_sample_amount):
-                is_weights.append((normal_sample_amount/weighted_sample_amount)**beta)
+            if weighted_sample_amount > 0:
+                samples.append(rb.sample(weighted_sample_amount))
+                is_weights += weighted_sample_amount * [(normal_sample_amount/weighted_sample_amount)**beta]
+
+        normalized_is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
 
         samples_dict = {}
         for key in samples[0]:
             samples_dict[key] = np.concatenate([*[rb[key] for rb in samples]])
 
-        return samples_dict, torch.Tensor(is_weights).unsqueeze(dim=1)
+        return samples_dict, normalized_is_weights
 
     def _learn(self):
         if self.mer:
@@ -200,7 +202,7 @@ class TD3Agent:
             Q_target_next = torch.min(Q1_target_next, Q2_target_next)
             Q_target = reward + self.gamma * Q_target_next * (1 - done)
 
-        critic_loss = (is_weights * (F.mse_loss(Q_current1, Q_target) + F.mse_loss(Q_current2, Q_target))).mean()
+        critic_loss = (is_weights * ((Q_current1 - Q_target) ** 2 + (Q_current2 - Q_target) ** 2)).mean()
 
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
