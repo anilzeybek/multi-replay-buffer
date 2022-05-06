@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# 5, 10000, 0.8
+
 for s in 0 1
 do
     python src/main.py --seed=$s --number_of_rbs=1

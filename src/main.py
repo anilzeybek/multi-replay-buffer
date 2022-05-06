@@ -30,8 +30,8 @@ def get_args():
     parser.add_argument("--policy_noise", type=float, default=0.2)
     parser.add_argument("--noise_clip", type=float, default=0.5)
     parser.add_argument("--policy_freq", type=int, default=2)
-    parser.add_argument("--number_of_rbs", type=int, default=1)
-    parser.add_argument("--clustering_freq", type=int, default=25000)
+    parser.add_argument("--number_of_rbs", type=int, default=5)
+    parser.add_argument("--clustering_freq", type=int, default=10000)
     parser.add_argument("--alpha", type=float, default=0.8)
     parser.add_argument("--beta", type=float, default=0.5)
 
