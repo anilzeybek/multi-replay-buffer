@@ -10,7 +10,7 @@ do
         do
             for alpha in 0.6 0.8 0.9
             do
-                python src/main.py --seed=$s --number_of_rbs=$norb --clustering_fq=$cf --alpha=$alpha
+                python src/main.py --seed=$s --number_of_rbs=$norb --clustering_freq=$cf --alpha=$alpha
             done
         done
     done
