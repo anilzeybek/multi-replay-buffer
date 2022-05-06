@@ -39,13 +39,7 @@ def get_args():
     return args
 
 
-def test(env, args):
-    agent = TD3Agent(
-        obs_dim=env.observation_space.shape[0],
-        action_dim=env.action_space.shape[0],
-        action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-        env_name=args.env_name
-    )
+def test(env, agent, args):
     agent.load(args.seed)
 
     scores = []
@@ -66,29 +60,7 @@ def test(env, args):
         f.write(f"{np.array(scores).mean()}\n")
 
 
-def train(env, args):
-    agent = TD3Agent(
-        obs_dim=env.observation_space.shape[0],
-        action_dim=env.action_space.shape[0],
-        action_bounds={"low": env.action_space.low, "high": env.action_space.high},
-        env_name=args.env_name,
-        expl_noise=args.expl_noise,
-        start_timesteps=args.start_timesteps,
-        buffer_size=args.buffer_size,
-        actor_lr=args.actor_lr,
-        critic_lr=args.critic_lr,
-        batch_size=args.batch_size,
-        gamma=args.gamma,
-        tau=args.tau,
-        policy_noise=args.policy_noise,
-        noise_clip=args.noise_clip,
-        policy_freq=args.policy_freq,
-        number_of_rbs=args.number_of_rbs,
-        clustering_freq=args.clustering_freq,
-        alpha=args.alpha,
-        beta=args.beta
-    )
-
+def train(env, agent, args):
     if args.cont:
         agent.load()
 
@@ -145,10 +117,32 @@ def main():
     print('alpha: ', args.alpha)
     print('---')
 
+    agent = TD3Agent(
+        obs_dim=env.observation_space.shape[0],
+        action_dim=env.action_space.shape[0],
+        action_bounds={"low": env.action_space.low, "high": env.action_space.high},
+        env_name=args.env_name,
+        expl_noise=args.expl_noise,
+        start_timesteps=args.start_timesteps,
+        buffer_size=args.buffer_size,
+        actor_lr=args.actor_lr,
+        critic_lr=args.critic_lr,
+        batch_size=args.batch_size,
+        gamma=args.gamma,
+        tau=args.tau,
+        policy_noise=args.policy_noise,
+        noise_clip=args.noise_clip,
+        policy_freq=args.policy_freq,
+        number_of_rbs=args.number_of_rbs,
+        clustering_freq=args.clustering_freq,
+        alpha=args.alpha,
+        beta=args.beta
+    )
+
     if args.test:
-        test(env, args)
+        test(env, agent, args)
     else:
-        train(env, args)
+        train(env, agent, args)
 
 
 if __name__ == "__main__":

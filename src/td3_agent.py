@@ -11,7 +11,7 @@ from models import Actor, Critic
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise=0.1, start_timesteps=25000, buffer_size=200000, actor_lr=1e-3, critic_lr=1e-3, batch_size=256, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2, number_of_rbs=1, clustering_freq=10000, alpha=1, beta=1):
+    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise, start_timesteps, buffer_size, actor_lr, critic_lr, batch_size, gamma, tau, policy_noise, noise_clip, policy_freq, number_of_rbs, clustering_freq, alpha, beta):
         self.max_action = max(action_bounds["high"])
 
         self.obs_dim = obs_dim
