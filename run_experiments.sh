@@ -10,12 +10,6 @@ do
 			--env_name $environment \
 			--seed $i \
 			--number_of_rbs $norb
-
-			python3 src/main.py \
-			--env_name $environment \
-			--seed $i \
-			--number_of_rbs $norb \
-			--test
 		done
 	done
 done
