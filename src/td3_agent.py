@@ -11,7 +11,9 @@ from models import Actor, Critic
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise, start_timesteps, buffer_size, actor_lr, critic_lr, batch_size, gamma, tau, policy_noise, noise_clip, policy_freq, number_of_rbs, clustering_freq, alpha, beta):
+    def __init__(self, obs_dim, action_dim, action_bounds, env_name, expl_noise, start_timesteps, buffer_size, actor_lr,
+                 critic_lr, batch_size, gamma, tau, policy_noise, noise_clip, policy_freq, number_of_rbs,
+                 clustering_freq, alpha, beta):
         self.max_action = max(action_bounds["high"])
 
         self.obs_dim = obs_dim
@@ -52,8 +54,8 @@ class TD3Agent:
         })
 
         if number_of_rbs > 1:
-            self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs-1)]
-            self.clustering_model = KMeans(n_clusters=number_of_rbs-1)
+            self.cluster_rbs = [self._create_rb() for _ in range(number_of_rbs - 1)]
+            self.clustering_model = KMeans(n_clusters=number_of_rbs - 1)
 
         self.t = 0
 
@@ -67,8 +69,8 @@ class TD3Agent:
                                                size=self.action_dim)
                 else:
                     action = (
-                        self.actor(torch.Tensor(obs)).numpy()
-                        + np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)
+                            self.actor(torch.Tensor(obs)).numpy()
+                            + np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)
                     )
 
         action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
@@ -89,7 +91,8 @@ class TD3Agent:
         torch.save({"actor": self.actor.state_dict(),
                     "critic": self.critic.state_dict(),
                     "t": self.t
-                    }, f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
+                    },
+                   f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
 
     def load(self, seed):
         checkpoint = torch.load(
@@ -157,11 +160,11 @@ class TD3Agent:
         samples = []
         for rb in [*self.cluster_rbs, self.rb]:
             normal_sample_amount = round(batch_size * rb.get_stored_size() / total)
-            weighted_sample_amount = round(batch_size * rb.get_stored_size()**self.alpha / total_weighted)
+            weighted_sample_amount = round(batch_size * rb.get_stored_size() ** self.alpha / total_weighted)
 
             if weighted_sample_amount > 0:
                 samples.append(rb.sample(weighted_sample_amount))
-                is_weights += weighted_sample_amount * [(normal_sample_amount/weighted_sample_amount)**beta]
+                is_weights += weighted_sample_amount * [(normal_sample_amount / weighted_sample_amount) ** beta]
 
         normalized_is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
 
@@ -189,11 +192,11 @@ class TD3Agent:
         Q_current1, Q_current2 = self.critic(obs, action)
         with torch.no_grad():
             noise = (
-                torch.randn_like(action) * self.policy_noise
+                    torch.randn_like(action) * self.policy_noise
             ).clamp(-self.noise_clip, self.noise_clip)
 
             next_actions = (
-                self.actor_target(next_obs) + noise
+                    self.actor_target(next_obs) + noise
             ).clamp(torch.from_numpy(self.action_bounds['low']), torch.from_numpy(self.action_bounds['high']))
 
             Q1_target_next, Q2_target_next = self.critic_target(next_obs, next_actions)

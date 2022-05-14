@@ -70,7 +70,7 @@ def train(env, agent, args):
 
     obs = env.reset()
     score = 0
-    for i in range(1, args.max_timesteps+1):
+    for i in range(1, args.max_timesteps + 1):
         action = agent.act(obs)
         next_obs, reward, done, _ = env.step(action)
 
