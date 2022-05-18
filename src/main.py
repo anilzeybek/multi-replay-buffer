@@ -1,12 +1,9 @@
 import argparse
 import random
-from time import time
-from datetime import datetime
 
 import gym
 import numpy as np
 import torch
-from torch.utils.tensorboard import SummaryWriter
 
 from td3_agent import TD3Agent
 
@@ -39,38 +36,44 @@ def get_args():
     return args
 
 
-def test(env, agent, args):
-    agent.load(args.seed)
-
+def eval_agent(env, agent, times=1, print_score=False, render=False):
     scores = []
-    for _ in range(1, 20):
+
+    for _ in range(times):
         obs = env.reset()
         score = 0
         done = False
+
         while not done:
             action = agent.act(obs, train_mode=False)
             next_obs, reward, done, _ = env.step(action)
+            if render:
+                env.render()
 
             obs = next_obs
             score += reward
 
         scores.append(score)
+        if print_score:
+            print(score)
 
-    with open("result.txt", "a") as f:
-        f.write(f"{np.array(scores).mean()}\n")
+    return sum(scores) / len(scores)
+
+
+def test(env, agent, args):
+    agent.load(args.seed)
+
+    score = eval_agent(env, agent, print_score=True, times=100)
+    print(f"average score: {score:.2f}")
 
 
 def train(env, agent, args):
     if args.cont:
         agent.load()
 
-    start = time()
-    scores = []
-    writer = SummaryWriter(f"./checkpoints/{args.env_name}-{args.seed}-{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}")
-
-    obs = env.reset()
+    obs = env.reset(seed=args.seed)
     score = 0
-    for i in range(1, args.max_timesteps + 1):
+    for t in range(1, args.max_timesteps + 1):
         action = agent.act(obs)
         next_obs, reward, done, _ = env.step(action)
 
@@ -79,23 +82,9 @@ def train(env, agent, args):
         score += reward
 
         if done:
-            writer.add_scalar("score", score, len(scores))
-            scores.append(score)
-
-            obs = env.reset()
+            print(f'{t}/{args.max_timesteps} | ep score: {score:.2f}')
             score = 0
-
-        if i % 1000 == 0:
-            print(f"{i}/{args.max_timesteps} | {scores[-1]:.2f}")
-
-    end = time()
-    print(f"training completed, elapsed time: {end - start}\n")
-
-    writer.add_hparams({
-        'number_of_rbs': args.number_of_rbs,
-        'clustering_freq': args.clustering_freq,
-        'alpha': args.alpha
-    }, {"score": np.array(scores[-50:]).mean()})
+            obs = env.reset()
 
     agent.save(args.seed)
 
@@ -107,9 +96,9 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    env.seed(args.seed)
     env.action_space.seed(args.seed)
 
+    print('==============================')
     print('env: ', args.env_name)
     print('seed: ', args.seed)
     print('number_of_rbs: ', args.number_of_rbs)
