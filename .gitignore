@@ -5,3 +5,4 @@ saved_networks/
 venv/
 checkpoints/
 .idea/
+wandb

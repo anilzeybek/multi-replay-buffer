@@ -4,6 +4,7 @@ import random
 import gym
 import numpy as np
 import torch
+import wandb
 
 from td3_agent import TD3Agent
 
@@ -68,6 +69,19 @@ def test(env, agent, args):
 
 
 def train(env, agent, args):
+    wandb.init(project="multi-experience-replay", entity="anilz")
+    wandb.config.env = args.env_name
+    wandb.config.seed = args.seed
+    wandb.config.number_of_rbs = args.number_of_rbs
+
+    print('==============================')
+    print('env: ', args.env_name)
+    print('seed: ', args.seed)
+    print('number_of_rbs: ', args.number_of_rbs)
+    print('clustering_freq: ', args.clustering_freq)
+    print('alpha: ', args.alpha)
+    print('---')
+
     if args.cont:
         agent.load()
 
@@ -83,8 +97,13 @@ def train(env, agent, args):
 
         if done:
             print(f'{t}/{args.max_timesteps} | ep score: {score:.2f}')
+            wandb.log({"score": score})
+
             score = 0
             obs = env.reset()
+
+    avg_score = eval_agent(env, agent, times=100)
+    print(f"Eval score: {avg_score}")
 
     agent.save(args.seed)
 
@@ -97,14 +116,6 @@ def main():
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     env.action_space.seed(args.seed)
-
-    print('==============================')
-    print('env: ', args.env_name)
-    print('seed: ', args.seed)
-    print('number_of_rbs: ', args.number_of_rbs)
-    print('clustering_freq: ', args.clustering_freq)
-    print('alpha: ', args.alpha)
-    print('---')
 
     agent = TD3Agent(
         obs_dim=env.observation_space.shape[0],
