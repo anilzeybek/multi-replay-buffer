@@ -61,11 +61,18 @@ def eval_agent(env, agent, times=1, print_score=False, render=False):
     return sum(scores) / len(scores)
 
 
-def test(env, agent, args):
-    agent.load(args.seed)
+def test(env, agent):
+    scores = []
+    for s in range(5):
+        agent.load(s)
 
-    score = eval_agent(env, agent, print_score=True, times=100)
-    print(f"average score: {score:.2f}")
+        score = eval_agent(env, agent, times=100)
+        print(score)
+        scores.append(score)
+
+    avg_score = sum(scores) / len(scores)
+    with open("result.txt", "a") as f:
+        f.write(f"{avg_score:.2f}\n")
 
 
 def train(env, agent, args):
@@ -140,7 +147,7 @@ def main():
     )
 
     if args.test:
-        test(env, agent, args)
+        test(env, agent)
     else:
         train(env, agent, args)
 

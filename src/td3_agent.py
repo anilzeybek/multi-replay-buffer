@@ -126,8 +126,9 @@ class TD3Agent:
             f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
 
     def load(self, seed):
-        checkpoint = torch.load(
-            f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
+        load_path = f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt"
+        checkpoint = torch.load(load_path)
+        print(f"loading {load_path}")
 
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_target = deepcopy(self.actor)
