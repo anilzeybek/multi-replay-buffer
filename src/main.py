@@ -77,6 +77,9 @@ def test(env, agent):
 
 def train(env, agent, args):
     wandb.init(project="multi-experience-replay-v2", entity="anilz")
+    wandb.run.name = f"{args.env_name}_norb{args.number_of_rbs}_{args.seed}"
+    wandb.run.save()
+
     wandb.config.env = args.env_name
     wandb.config.seed = args.seed
     wandb.config.number_of_rbs = args.number_of_rbs
@@ -111,6 +114,7 @@ def train(env, agent, args):
 
     avg_score = eval_agent(env, agent, times=100)
     print(f"Eval score: {avg_score}")
+    wandb.log({"eval_score": avg_score})
 
     agent.save(args.seed)
 
