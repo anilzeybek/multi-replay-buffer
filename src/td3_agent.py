@@ -168,8 +168,7 @@ class TD3Agent:
 
         all_transitions = self.rb.get_all_transitions()
 
-        preds = self.clustering_model.fit_predict(np.concatenate(
-            [all_transitions['obs'], all_transitions['action']], axis=1))
+        preds = self.clustering_model.fit_predict(all_transitions['obs'])
 
         idxs = []
         for i in range(len(self.cluster_rbs)):
@@ -204,13 +203,13 @@ class TD3Agent:
                 samples.append(rb.sample(weighted_sample_amount))
                 is_weights += weighted_sample_amount * [(normal_sample_amount / weighted_sample_amount) ** beta]
 
-        normalized_is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
+        # normalized_is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
 
         samples_dict = {}
         for key in samples[0]:
             samples_dict[key] = np.concatenate([*[rb[key] for rb in samples]])
 
-        return samples_dict, normalized_is_weights
+        return samples_dict, torch.Tensor(is_weights).unsqueeze(dim=1)
 
     def _learn(self):
         if self.number_of_rbs > 1:
