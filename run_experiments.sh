@@ -6,7 +6,8 @@ for ((i = 0; i < 5; i += 1)); do
       python3 src/main.py \
         --env_name $environment \
         --seed $i \
-        --number_of_rbs $norb
+        --number_of_rbs $norb \
+        --wandb
     done
   done
 done

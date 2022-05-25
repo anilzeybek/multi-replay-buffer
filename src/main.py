@@ -15,6 +15,7 @@ def get_args():
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--cont', default=False, action='store_true', help="use already saved policy in training")
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument("--wandb", default=False, action='store_true')
 
     parser.add_argument("--max_timesteps", type=int, default=int(2e+5))
     parser.add_argument("--expl_noise", type=float, default=0.1)
@@ -76,13 +77,14 @@ def test(env, agent):
 
 
 def train(env, agent, args):
-    wandb.init(project="multi-experience-replay-v2", entity="anilz")
-    wandb.run.name = f"{args.env_name}_norb{args.number_of_rbs}_{args.seed}"
-    wandb.run.save()
+    if args.wandb:
+        wandb.init(project="multi-experience-replay-v3", entity="anilz")
+        wandb.run.name = f"{args.env_name}_norb{args.number_of_rbs}_{args.seed}"
+        wandb.run.save()
 
-    wandb.config.env = args.env_name
-    wandb.config.seed = args.seed
-    wandb.config.number_of_rbs = args.number_of_rbs
+        wandb.config.env = args.env_name
+        wandb.config.seed = args.seed
+        wandb.config.number_of_rbs = args.number_of_rbs
 
     print('==============================')
     print('env: ', args.env_name)
@@ -107,14 +109,16 @@ def train(env, agent, args):
 
         if done:
             print(f'{t}/{args.max_timesteps} | ep score: {score:.2f}')
-            wandb.log({"score": score})
+            if args.wandb:
+                wandb.log({"score": score})
 
             score = 0
             obs = env.reset()
 
     avg_score = eval_agent(env, agent, times=100)
     print(f"Eval score: {avg_score}")
-    wandb.log({"eval_score": avg_score})
+    if args.wandb:
+        wandb.log({"eval_score": avg_score})
 
     agent.save(args.seed)
 
