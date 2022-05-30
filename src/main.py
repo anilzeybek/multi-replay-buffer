@@ -31,6 +31,7 @@ def get_args():
     parser.add_argument("--policy_freq", type=int, default=2)
     parser.add_argument("--number_of_rbs", type=int, default=5)
     parser.add_argument("--clustering_freq", type=int, default=10000)
+    parser.add_argument("--normalize_is", type=bool, default=False)
     parser.add_argument("--alpha", type=float, default=0.8)
     parser.add_argument("--beta", type=float, default=0.5)
 
@@ -64,7 +65,8 @@ def eval_agent(env, agent, times=1, print_score=False, render=False):
 
 def test(env, agent):
     scores = []
-    for s in range(5):
+    # TODO: following 3 may require change
+    for s in range(3):
         agent.load(s)
 
         score = eval_agent(env, agent, times=100)
@@ -78,7 +80,7 @@ def test(env, agent):
 
 def train(env, agent, args):
     if args.wandb:
-        wandb.init(project="multi-experience-replay-v3", entity="anilz")
+        wandb.init(project="multi-experience-replay-v5", entity="anilz")
         wandb.run.name = f"{args.env_name}_norb{args.number_of_rbs}_{args.seed}"
         wandb.run.save()
 
@@ -91,6 +93,7 @@ def train(env, agent, args):
     print('seed: ', args.seed)
     print('number_of_rbs: ', args.number_of_rbs)
     print('clustering_freq: ', args.clustering_freq)
+    print('normalize_is: ', args.normalize_is)
     print('alpha: ', args.alpha)
     print('---')
 
@@ -150,6 +153,7 @@ def main():
         policy_freq=args.policy_freq,
         number_of_rbs=args.number_of_rbs,
         clustering_freq=args.clustering_freq,
+        normalize_is=args.normalize_is,
         alpha=args.alpha,
         beta=args.beta
     )

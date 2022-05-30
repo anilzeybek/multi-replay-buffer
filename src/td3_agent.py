@@ -30,6 +30,7 @@ class TD3Agent:
                  policy_freq,
                  number_of_rbs,
                  clustering_freq,
+                 normalize_is,
                  alpha,
                  beta):
         self.max_action = max(action_bounds["high"])
@@ -51,6 +52,7 @@ class TD3Agent:
         self.policy_freq = policy_freq
         self.number_of_rbs = number_of_rbs
         self.clustering_freq = clustering_freq
+        self.normalize_is = normalize_is
         self.alpha = alpha
         self.beta = beta
 
@@ -123,10 +125,10 @@ class TD3Agent:
             "normalizer_running_count": self.normalizer.running_count,
             "t": self.t
         },
-            f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt")
+            f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_ni{self.normalize_is}_alpha{self.alpha}.pt")
 
     def load(self, seed):
-        load_path = f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_cf{self.clustering_freq}_alpha{self.alpha}.pt"
+        load_path = f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_ni{self.normalize_is}_alpha{self.alpha}.pt"
         checkpoint = torch.load(load_path)
         print(f"loading {load_path}")
 
@@ -183,7 +185,7 @@ class TD3Agent:
 
         self.rb.clear()
 
-    def _sample(self, batch_size, beta=1):
+    def _sample(self, batch_size, beta):
         is_weights = []
 
         total = 0
@@ -203,13 +205,16 @@ class TD3Agent:
                 samples.append(rb.sample(weighted_sample_amount))
                 is_weights += weighted_sample_amount * [(normal_sample_amount / weighted_sample_amount) ** beta]
 
-        # normalized_is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
+        if self.normalize_is:
+            is_weights = torch.Tensor(is_weights).unsqueeze(dim=1) / max(is_weights)
+        else:
+            is_weights = torch.Tensor(is_weights).unsqueeze(dim=1)
 
         samples_dict = {}
         for key in samples[0]:
             samples_dict[key] = np.concatenate([*[rb[key] for rb in samples]])
 
-        return samples_dict, torch.Tensor(is_weights).unsqueeze(dim=1)
+        return samples_dict, is_weights
 
     def _learn(self):
         if self.number_of_rbs > 1:
