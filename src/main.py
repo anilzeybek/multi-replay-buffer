@@ -15,6 +15,7 @@ def get_args():
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--cont', default=False, action='store_true', help="use already saved policy in training")
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--file_name', type=str, default='result.txt')
     parser.add_argument("--wandb", default=False, action='store_true')
 
     parser.add_argument("--max_timesteps", type=int, default=int(2e+5))
@@ -31,7 +32,7 @@ def get_args():
     parser.add_argument("--policy_freq", type=int, default=2)
     parser.add_argument("--number_of_rbs", type=int, default=5)
     parser.add_argument("--clustering_freq", type=int, default=10000)
-    parser.add_argument("--normalize_is", type=bool, default=False)
+    parser.add_argument("--normalize_is", default=False, action='store_true')
     parser.add_argument("--alpha", type=float, default=0.8)
     parser.add_argument("--beta", type=float, default=0.5)
 
@@ -63,7 +64,7 @@ def eval_agent(env, agent, times=1, print_score=False, render=False):
     return sum(scores) / len(scores)
 
 
-def test(env, agent):
+def test(env, agent, file_name):
     scores = []
     # TODO: following 3 may require change
     for s in range(3):
@@ -74,7 +75,7 @@ def test(env, agent):
         scores.append(score)
 
     avg_score = sum(scores) / len(scores)
-    with open("result.txt", "a") as f:
+    with open(file_name, "a") as f:
         f.write(f"{avg_score:.2f}\n")
 
 
@@ -159,7 +160,7 @@ def main():
     )
 
     if args.test:
-        test(env, agent)
+        test(env, agent, args.file_name)
     else:
         train(env, agent, args)
 
