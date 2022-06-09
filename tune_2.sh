@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for environment in HalfCheetah-v3 Hopper-v3 Walker2d-v4 Ant-v2 Reacher-v2 InvertedDoublePendulum-v2; do
+for environment in HalfCheetah-v3 Hopper-v3 Walker2d-v3 Reacher-v2 InvertedDoublePendulum-v2; do
     for norb in 17 33 65 127; do
         for alpha in 0.6 0.8; do
             for s in 0 1 2; do
