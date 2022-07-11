@@ -125,10 +125,10 @@ class TD3Agent:
             "normalizer_running_count": self.normalizer.running_count,
             "t": self.t
         },
-            f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_ni{self.normalize_is}_alpha{self.alpha}.pt")
+            f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}.pt")
 
     def load(self, seed):
-        load_path = f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}_ni{self.normalize_is}_alpha{self.alpha}.pt"
+        load_path = f"checkpoints/{self.env_name}_seed{seed}_norb{self.number_of_rbs}.pt"
         checkpoint = torch.load(load_path)
         print(f"loading {load_path}")
 

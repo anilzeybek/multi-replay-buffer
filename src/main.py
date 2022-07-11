@@ -18,7 +18,7 @@ def get_args():
     parser.add_argument('--file_name', type=str, default='result.txt')
     parser.add_argument("--wandb", default=False, action='store_true')
 
-    parser.add_argument("--max_timesteps", type=int, default=int(2e+5))
+    parser.add_argument("--max_timesteps", type=int, default=int(1e+6))
     parser.add_argument("--expl_noise", type=float, default=0.1)
     parser.add_argument("--start_timesteps", type=int, default=10000)
     parser.add_argument("--buffer_size", type=int, default=200000)
@@ -81,7 +81,7 @@ def test(env, agent, file_name):
 
 def train(env, agent, args):
     if args.wandb:
-        wandb.init(project="multi-experience-replay-v5", entity="anilz")
+        wandb.init(project="multi-replay-buffer-v1", entity="anilz")
         wandb.run.name = f"{args.env_name}_norb{args.number_of_rbs}_{args.seed}"
         wandb.run.save()
 
